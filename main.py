@@ -38,17 +38,37 @@ SENTENCE = (
 MAX_CHARS = 200
 
 
+def validate(text: str) -> None:
+    """Hold the sentence to the gate before anything is written.
+
+    The sealed scorer accepts UTF-8 text of 1 to 200 characters, not only
+    whitespace; the entry is one sentence, so exactly one terminal period.
+    Fail loudly here rather than writing a file the gate would refuse.
+    """
+    assert isinstance(text, str), "sentence must be text"
+    assert text.strip(), "sentence must not be only whitespace"
+    assert 1 <= len(text) <= MAX_CHARS, "sentence must be 1-200 characters"
+    assert text.count(".") == 1 and text.endswith("."), "entry must be one sentence"
+    text.encode("utf-8")  # raises if not valid UTF-8
+
+
 def main() -> None:
     output_dir = os.environ.get("MAKEFUN_OUTPUT_DIR", "/output")
     os.makedirs(output_dir, exist_ok=True)
 
     text = SENTENCE.strip()
-    assert 1 <= len(text) <= MAX_CHARS, "sentence must be 1-200 characters"
-    assert text.strip(), "sentence must not be only whitespace"
+    validate(text)
 
     path = os.path.join(output_dir, "entry.txt")
     with open(path, "w", encoding="utf-8") as f:
         f.write(text)
+
+    # Read back and verify: the grading sandbox runs the program twice and
+    # gates what it wrote, so confirm the file holds exactly the sentence.
+    with open(path, "r", encoding="utf-8") as f:
+        written = f.read()
+    assert written == text, "entry.txt does not hold the intended sentence"
+    validate(written)
 
 
 if __name__ == "__main__":
